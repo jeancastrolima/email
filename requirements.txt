@@ -1,4 +1,3 @@
-# requirements.txt
 Flask==2.3.3
 twilio==8.9.1
 python-dotenv==1.0.0
@@ -10,5 +9,5 @@ altair
 resend
 bcrypt
 streamlit-cookies-manager
-st-tinymce
+streamlit-quill
 requests
