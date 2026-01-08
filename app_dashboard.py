@@ -309,7 +309,7 @@ def main_app():
                     status_texto.info(f"Processando: {i+1} de {total} | ✅ Sucessos: {sucessos} | ❌ Falhas: {falhas}")
                     
                     # Pequena pausa para não travar a interface e respeitar limites de taxa
-                    time.sleep(0.1) 
+                    time.sleep(0.6)
 
                 st.success(f"✅ Processo concluído! {sucessos} e-mails enviados e {falhas} falhas.")
 
