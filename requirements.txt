@@ -1,0 +1,14 @@
+# requirements.txt
+Flask==2.3.3
+twilio==8.9.1
+python-dotenv==1.0.0
+google-generativeai==0.5.4
+streamlit
+mysql-connector-python
+pandas
+altair
+resend
+bcrypt
+streamlit-cookies-manager
+st-tinymce
+requests

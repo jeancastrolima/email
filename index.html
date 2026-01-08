@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Bitrix24 Aberto</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        header {
+            background: #0073c6;
+            color: white;
+            padding: 20px;
+            font-size: 24px;
+        }
+        main {
+            padding: 40px;
+        }
+        p {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <header>Chat Online</header>
+
+    <main>
+        <p>O chat abrirá automaticamente em alguns segundos…</p>
+    </main>
+
+    <!-- Script do Chat Bitrix24 -->
+    <script>
+        (function(w,d,u){
+            var s=d.createElement('script');s.async=true;s.src=u+'?'+(Date.now()/60000|0);
+            var h=d.getElementsByTagName('script')[0];h.parentNode.insertBefore(s,h);
+        })(window,document,'https://cdn.bitrix24.com.br/b27562101/crm/site_button/loader_1_si6ujl.js');
+
+        // 🔓 Força a abertura automática
+        window.addEventListener('load', function(){
+            // Tenta abrir a janela a cada 500ms até funcionar
+            var abrirChat = setInterval(function(){
+                try {
+                    if (window.BX && BX.SiteButton && BX.SiteButton.open) {
+                        BX.SiteButton.open(); // chama a função interna do Bitrix
+                        clearInterval(abrirChat);
+                    }
+                } catch(e) { /* aguarda carregar */ }
+            }, 500);
+        });
+    </script>
+
+</body>
+</html>
