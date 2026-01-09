@@ -191,7 +191,7 @@ def main_app():
     # Conteúdo Principal com Abas
     st.title("🚀 Central de Contatos")
     tab_dashboard, tab_sender, tab_extractor = st.tabs(["📊 Dashboard", "✉️ Disparador de E-mails", "📂 Extrator de MBOX"])
-    
+ 
     with tab_dashboard:
         st.header("Análise Interativa da Base de Contatos")
         df_filtrado = df_principal.copy()
@@ -248,70 +248,103 @@ def main_app():
             st.data_editor(df_paginado[['ID', 'Email', 'Domínio', 'Adicionado Em']], use_container_width=True, hide_index=True, disabled=True, column_config={"ID": st.column_config.NumberColumn("ID", width="small"), "Email": st.column_config.TextColumn("Email", width="large"), "Domínio": st.column_config.TextColumn("Domínio", width="medium"), "Adicionado Em": st.column_config.DatetimeColumn("Adicionado Em", format="D/M/YYYY HH:mm")})
 
     with tab_sender:
-        st.header("Criar e Enviar Campanha via SendGrid")
-        st.subheader("1. Selecione o Público-Alvo")
-        dominios_para_envio = st.multiselect("Filtre por domínio (deixe em branco para selecionar TODOS):", options=dominios_unicos, key="sender_domains")
-        if dominios_para_envio: lista_final_envio = df_principal[df_principal['Domínio'].isin(dominios_para_envio)]['Email'].tolist()
-        else: lista_final_envio = df_principal['Email'].tolist()
-        st.info(f"Público selecionado: **{len(lista_final_envio):,}** e-mails.")
+        st.header("Criar e Enviar Campanha via Resend")
 
-        st.subheader("2. Componha sua Mensagem")
-        col_editor, col_preview = st.columns(2)
-        with col_editor:
-            assunto = st.text_input("Assunto do E-mail:", key="sender_subject")
-            corpo_html = st.text_area("Corpo do E-mail (HTML):", height=500, key="sender_body", value="<!DOCTYPE html><html>...</html>")
-        with col_preview:
-            st.markdown("##### **👁️ Pré-visualização**")
-            components.html(corpo_html, height=550, scrolling=True)
+    # --- PASSO 0: LIMPEZA AUTOMÁTICA (B2B APENAS) ---
+    # Lista de termos para remover (pessoais, governo, bots)
+    lixo_digital = [
+        'gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'yahoo.com.br',
+        'bol.com.br', 'uol.com.br', 'terra.com.br', 'ig.com.br', 'globo.com',
+        'oi.com.br', 'icloud.com', 'gov.br', 'mil.br', 'edu.br', 'bounces.google.com',
+        'salesforce.com', '.sbs', '.blog', '.com.de', 'acems', 'mcdlv.net'
+    ]
+    regex_exclusao = "|".join(lixo_digital)
+    
+    # Criamos o DataFrame B2B (apenas empresas reais)
+    df_b2b = df_principal[~df_principal['Email'].str.contains(regex_exclusao, case=False, na=False)].copy()
 
-        st.subheader("3. Iniciar o Disparo")
-# No seu arquivo, localize este botão dentro da tab_sender
-        if st.button("🚀 Iniciar Envio em Massa", type="primary"):
-            if not assunto or not corpo_html:
-                st.error("⚠️ Por favor, preencha o assunto e o corpo do e-mail.")
-            elif len(lista_final_envio) == 0:
-                st.warning("⚠️ A lista de destinatários está vazia.")
-            else:
-                st.markdown("---")
-                st.subheader("⏳ Progresso do Envio")
+    # --- PASSO 1: SELEÇÃO POR EMPRESA ---
+    st.subheader("1. Selecione as Empresas Alvo")
+    
+    # Agrupamos por domínio para mostrar ao usuário
+    df_empresas = df_b2b.groupby('Domínio').size().reset_index(name='Qtd de Contatos')
+    df_empresas.insert(0, 'Selecionar', False) # Adiciona checkbox desmarcado por padrão
+
+    # Tabela interativa para o usuário escolher a empresa
+    df_selecao = st.data_editor(
+        df_empresas,
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "Selecionar": st.column_config.CheckboxColumn("Enviar?", default=False),
+            "Domínio": st.column_config.TextColumn("Empresa / Domínio", disabled=True),
+            "Qtd de Contatos": st.column_config.NumberColumn("Contatos", disabled=True),
+        },
+        key="editor_dominios"
+    )
+
+    # Filtra os e-mails reais baseados nas empresas marcadas
+    dominios_eleitos = df_selecao[df_selecao['Selecionar'] == True]['Domínio'].tolist()
+    lista_final_envio = df_b2b[df_b2b['Domínio'].isin(dominios_eleitos)]['Email'].tolist()
+
+    if dominios_eleitos:
+        st.success(f"🎯 **{len(dominios_eleitos)}** empresas selecionadas. Público total: **{len(lista_final_envio):,}** e-mails.")
+    else:
+        st.info("💡 Marque as empresas na tabela acima para as quais deseja enviar.")
+
+    st.markdown("---")
+
+    # --- PASSO 2: COMPOSIÇÃO ---
+    st.subheader("2. Componha sua Mensagem")
+    col_editor, col_preview = st.columns(2)
+    with col_editor:
+        assunto = st.text_input("Assunto do E-mail:", key="sender_subject")
+        corpo_html = st.text_area("Corpo do E-mail (HTML):", height=400, key="sender_body", 
+                                 value="<!DOCTYPE html><html><body><h3>Olá!</h3><p>Sua mensagem aqui.</p></body></html>")
+    with col_preview:
+        st.markdown("##### **👁️ Pré-visualização**")
+        st.components.v1.html(corpo_html, height=450, scrolling=True)
+
+    # --- PASSO 3: DISPARO ---
+    st.subheader("3. Iniciar o Disparo")
+    if st.button("🚀 Iniciar Envio em Massa", type="primary", use_container_width=True):
+        if not assunto or not corpo_html:
+            st.error("⚠️ Por favor, preencha o assunto e o corpo do e-mail.")
+        elif len(lista_final_envio) == 0:
+            st.warning("⚠️ Selecione pelo menos uma empresa na lista acima.")
+        else:
+            st.markdown("---")
+            st.subheader("⏳ Progresso do Envio")
+            
+            barra_progresso = st.progress(0)
+            status_texto = st.empty()
+            log_container = st.expander("Ver Log de Envios", expanded=False)
+            
+            sucessos = 0
+            falhas = 0
+            total = len(lista_final_envio)
+            
+            # Chaves do st.secrets
+            api_key = st.secrets.resend.api_key
+            remetente = st.secrets.resend.verified_sender
+
+            for i, email in enumerate(lista_final_envio):
+                sucesso, msg = enviar_email_resend(api_key, remetente, email, assunto, corpo_html)
                 
-                # Containers de status na interface
-                barra_progresso = st.progress(0)
-                status_texto = st.empty()
-                log_container = st.expander("Ver Log de Envios", expanded=False)
+                if sucesso:
+                    sucessos += 1
+                    log_container.write(f"✅ {email}: Enviado")
+                else:
+                    falhas += 1
+                    log_container.error(f"❌ {email}: Erro ({msg})")
                 
-                sucessos = 0
-                falhas = 0
-                total = len(lista_final_envio)
+                percentual = (i + 1) / total
+                barra_progresso.progress(percentual)
+                status_texto.info(f"Processando: {i+1} de {total} | ✅ Sucessos: {sucessos} | ❌ Falhas: {falhas}")
                 
-                # Chaves vindas do st.secrets
-                api_key = st.secrets.resend.api_key
-                remetente = st.secrets.resend.verified_sender
+                time.sleep(0.6)
 
-
-                for i, email in enumerate(lista_final_envio):
-                    # Chama sua função existente
-                    sucesso, msg = enviar_email_resend(
-    api_key, remetente, email, assunto, corpo_html
-)
-
-                    
-                    if sucesso:
-                        sucessos += 1
-                        log_container.write(f"✅ {email}: Enviado")
-                    else:
-                        falhas += 1
-                        log_container.error(f"❌ {email}: Erro ({msg})")
-                    
-                    # Atualiza barra e texto
-                    percentual = (i + 1) / total
-                    barra_progresso.progress(percentual)
-                    status_texto.info(f"Processando: {i+1} de {total} | ✅ Sucessos: {sucessos} | ❌ Falhas: {falhas}")
-                    
-                    # Pequena pausa para não travar a interface e respeitar limites de taxa
-                    time.sleep(0.6)
-
-                st.success(f"✅ Processo concluído! {sucessos} e-mails enviados e {falhas} falhas.")
+            st.success(f"✅ Processo concluído! {sucessos} e-mails enviados e {falhas} falhas.")
 
     with tab_extractor:
         st.header("📂 Extrair E-mails de Arquivos MBOX")
