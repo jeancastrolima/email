@@ -139,33 +139,55 @@ def main_app():
             st.dataframe(df_filtrado[['ID', 'Email', 'Domínio', 'Adicionado Em']], use_container_width=True, hide_index=True)
 
     # --- ABA: DISPARADOR ---
+    # --- ABA: DISPARADOR (ATUALIZADA) ---
     with tab_sender:
-        st.header("✉️ Nova Campanha B2B")
+        st.header("✉️ Disparador de Mensagens")
         
-        # Filtro de e-mails corporativos (Limpeza automática)
+        # Filtro de e-mails corporativos (Limpeza automática para a lista do banco)
         lixo = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'uol.com.br', 'terra.com.br', 'gov.br', 'mil.br']
         df_b2b = df_principal[~df_principal['Email'].str.contains("|".join(lixo), case=False, na=False)].copy()
 
-        st.subheader("1. Seleção de Empresas")
-        df_empresas = df_b2b.groupby('Domínio').size().reset_index(name='Qtd Contatos')
-        df_empresas.insert(0, 'Selecionar', False)
-
-        df_selecao = st.data_editor(
-            df_empresas,
-            hide_index=True,
-            use_container_width=True,
-            column_config={"Selecionar": st.column_config.CheckboxColumn("Enviar?"), "Domínio": "Empresa"},
-            key="editor_dominios_envio"
+        st.subheader("1. Definir Destinatários")
+        
+        # NOVA OPÇÃO: Escolha entre Empresas ou E-mail único
+        modo_envio = st.radio(
+            "Como deseja selecionar os destinatários?",
+            ["Por Empresa (Lote)", "E-mail Específico (Individual)"],
+            horizontal=True
         )
 
-        dominios_eleitos = df_selecao[df_selecao['Selecionar'] == True]['Domínio'].tolist()
-        lista_final_envio = df_b2b[df_b2b['Domínio'].isin(dominios_eleitos)]['Email'].tolist()
+        lista_final_envio = []
 
-        if dominios_eleitos:
-            st.success(f"🎯 **{len(lista_final_envio):,}** e-mails selecionados.")
+        if modo_envio == "Por Empresa (Lote)":
+            df_empresas = df_b2b.groupby('Domínio').size().reset_index(name='Qtd Contatos')
+            df_empresas.insert(0, 'Selecionar', False)
+
+            df_selecao = st.data_editor(
+                df_empresas,
+                hide_index=True,
+                use_container_width=True,
+                column_config={"Selecionar": st.column_config.CheckboxColumn("Enviar?"), "Domínio": "Empresa"},
+                key="editor_dominios_envio"
+            )
+
+            dominios_eleitos = df_selecao[df_selecao['Selecionar'] == True]['Domínio'].tolist()
+            lista_final_envio = df_b2b[df_b2b['Domínio'].isin(dominios_eleitos)]['Email'].tolist()
+            
+            if dominios_eleitos:
+                st.success(f"🎯 **{len(lista_final_envio):,}** e-mails selecionados das empresas marcadas.")
+
+        else:
+            email_manual = st.text_input("Digite o e-mail do destinatário:", placeholder="exemplo@empresa.com")
+            if email_manual:
+                if re.match(r"[^@]+@[^@]+\.[^@]+", email_manual):
+                    lista_final_envio = [email_manual.strip()]
+                    st.success(f"🎯 E-mail pronto para envio: **{email_manual}**")
+                else:
+                    st.error("⚠️ Por favor, digite um formato de e-mail válido.")
 
         st.markdown("---")
         st.subheader("2. Mensagem e Disparo")
+        
         col_ed, col_prev = st.columns(2)
         with col_ed:
             assunto = st.text_input("Assunto do E-mail:", key="send_sub")
@@ -174,9 +196,11 @@ def main_app():
             st.markdown("##### **👁️ Pré-visualização**")
             st.components.v1.html(corpo_html, height=350, scrolling=True)
 
-        if st.button("🚀 INICIAR ENVIO EM MASSA", type="primary", use_container_width=True):
-            if not assunto or not lista_final_envio:
-                st.error("⚠️ Preencha o assunto e selecione as empresas na tabela.")
+        if st.button("🚀 INICIAR ENVIO", type="primary", use_container_width=True):
+            if not assunto:
+                st.error("⚠️ O assunto é obrigatório.")
+            elif not lista_final_envio:
+                st.error("⚠️ Nenhum destinatário selecionado.")
             else:
                 st.markdown("---")
                 barra_progresso = st.progress(0)
@@ -201,10 +225,13 @@ def main_app():
                     percentual = (i + 1) / total
                     barra_progresso.progress(percentual)
                     status_texto.info(f"Processando: {i+1} de {total} | Sucessos: {sucessos} | Falhas: {falhas}")
-                    time.sleep(0.5)
+                    
+                    # Se for apenas um e-mail, não precisa de sleep longo
+                    if total > 1:
+                        time.sleep(0.5)
 
                 st.success(f"🏁 Processo concluído! Sucessos: {sucessos} | Falhas: {falhas}")
-
+                
 # --- 4. Gerenciamento de Login ---
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
