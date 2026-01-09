@@ -169,87 +169,12 @@ def main_app():
         col_ed, col_prev = st.columns(2)
         with col_ed:
             assunto = st.text_input("Assunto do E-mail:", key="send_sub")
-corpo_html = st.text_area(
-    "Corpo (HTML):",
-    height=300,
-    value="""<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>UNAX Group</title>
-</head>
-<body style="margin:0; padding:0; background-color:#f4f6f8; font-family: Arial, Helvetica, sans-serif;">
-
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8; padding:20px 0;">
-        <tr>
-            <td align="center">
-
-                <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden;">
-
-                    <tr>
-                        <td style="background:#0d6efd; padding:25px; text-align:center;">
-                            <h1 style="margin:0; color:#ffffff; font-size:26px;">UNAX Group</h1>
-                            <p style="margin:8px 0 0; color:#dbe7ff; font-size:14px;">
-                                Soluções inteligentes para o seu negócio
-                            </p>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style="padding:30px; color:#333333;">
-                            <h3 style="margin-top:0;">Olá!</h3>
-
-                            <p style="font-size:15px; line-height:1.6;">
-                                A <strong>UNAX Group</strong> está pronta para ajudar sua empresa
-                                a alcançar novos resultados com tecnologia e inovação.
-                            </p>
-
-                            <p style="font-size:15px; line-height:1.6;">
-                                Desenvolvemos soluções sob medida para impulsionar
-                                performance, automação e crescimento sustentável.
-                            </p>
-
-                            <div style="text-align:center; margin:30px 0;">
-                                <a href="#"
-                                   style="background:#0d6efd; color:#ffffff; text-decoration:none;
-                                          padding:14px 28px; border-radius:6px; font-size:15px;
-                                          display:inline-block;">
-                                    Conheça nossa proposta
-                                </a>
-                            </div>
-
-                            <p style="font-size:14px; color:#666666;">
-                                Caso tenha qualquer dúvida, nossa equipe está à disposição.
-                            </p>
-
-                            <p style="font-size:14px; margin-top:25px;">
-                                Atenciosamente,<br>
-                                <strong>Equipe UNAX Group</strong>
-                            </p>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style="background:#f1f1f1; padding:20px; text-align:center;
-                                   font-size:12px; color:#777777;">
-                            © 2026 UNAX Group. Todos os direitos reservados.
-                        </td>
-                    </tr>
-
-                </table>
-
-            </td>
-        </tr>
-    </table>
-
-</body>
-</html>"""
-)
-with col_prev:
+            corpo_html = st.text_area("Corpo (HTML):", height=300, value="<html><body><h3>Olá!</h3><p>Sua proposta aqui.</p></body></html>")
+        with col_prev:
             st.markdown("##### **👁️ Pré-visualização**")
             st.components.v1.html(corpo_html, height=350, scrolling=True)
 
-if st.button("🚀 INICIAR ENVIO EM MASSA", type="primary", use_container_width=True):
+        if st.button("🚀 INICIAR ENVIO EM MASSA", type="primary", use_container_width=True):
             if not assunto or not lista_final_envio:
                 st.error("⚠️ Preencha o assunto e selecione as empresas na tabela.")
             else:
