@@ -82,7 +82,7 @@ def main_app():
     dominios_selecionados = st.sidebar.multiselect("Filtrar por Domínio:", options=dominios_unicos)
     termo_busca = st.sidebar.text_input("Buscar por texto no e-mail:")
     
-    st.title("🚀 Central de Contatos")
+    st.title("Central de Contatos")
     tab_dashboard, tab_sender = st.tabs(["📊 Dashboard", "✉️ Disparador de E-mails"])
  
     # --- ABA: DASHBOARD ---
